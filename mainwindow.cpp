@@ -11,6 +11,7 @@
 //#include <QScreen>
 #include <QMessageBox>
 #include <assert.h>
+#include <math.h>
 
 MainWindow::MainWindow(QWidget *parent) :
   QMainWindow(parent),
@@ -40,14 +41,15 @@ struct MyData
 	MyData() = default;
 };
 
-MyData MyFunc(int N, double x1, double x2, double a)
+MyData MyFunc(int N, double x1, double x2)
 {
 	assert(N > 1);
 	MyData ans(N);
 	for (int i = 0; i < N; ++i)
 	{
 		ans.x[i] = (x2-x1) * i / (N-1) + x1; // x от x1 до x2
-		ans.y[i] =  a *ans.x[i] * ans.x[i];  // парабола
+		ans.y[i] = sin(ans.x[i]);
+		//ans.y[i] =  a *ans.x[i] * ans.x[i];  // парабола
 	}
 	return ans;
 };
@@ -56,17 +58,30 @@ void MainWindow::MyPlot1(QCustomPlot *customPlot, const MyData & data)
 {
 // create graph and assign data to it:
 	customPlot->addGraph();
-	customPlot->graph(0)->setData(data.x, data.y);
+	QVector<double> x(data.x.size()), y(data.x.size());
+	double ax = 1., bx = 0., ay = 2., by = 0.;
+	for (int i = 0; i < data.x.size(); i++)
+	{
+		x[i] = ax * data.x[i] + bx;
+		y[i] = ay * data.y[i]+by;
+	}
+	customPlot->graph(0)->setData(x, y);
 	// give the axes some labels:
 	customPlot->xAxis->setLabel("x");
 	customPlot->yAxis->setLabel("y");
 	// set axes ranges, so we see all data:
-	customPlot->xAxis->setRange(-1, 1);
-	customPlot->yAxis->setRange(0, 1);
+	auto x_range = std::minmax_element(x.begin(), x.end());
+	auto y_range = std::minmax_element(y.begin(), y.end());
+	assert(*x_range.first <= *x_range.second);
+//	customPlot->xAxis->setRange(-2*M_PI, 2*M_PI);
+	customPlot->xAxis->setRange(*x_range.first-0.1, *x_range.second+0.1);
+	customPlot->yAxis->setRange(*y_range.first-0.1, *y_range.second+0.1);
 
 	customPlot->graph(0)->setPen(QPen(QColor(255, 100, 0)));
-	customPlot->graph(0)->setLineStyle(QCPGraph::lsLine);
-	customPlot->graph(0)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssDisc, 2));
+
+	auto pen = customPlot->graph(0)->pen();
+	pen.setWidth(3);
+	customPlot->graph(0)->setPen(pen);
 #if 0
 	// give the axes some labels:
 	customPlot->xAxis->setLabel("x");
@@ -85,10 +100,10 @@ void MainWindow::MyDemo1(QCustomPlot *customPlot)
   demoName = "MyDemo1";
   // generate some data:
   int N = 101;
-  double x1 = -1;
-  double x2 = 1;
+  double x1 = -4*M_PI;
+  double x2 = 4*M_PI;
   double a = 2;
-  auto data = MyFunc(N, x1, x2, a);
+  auto data = MyFunc(N, x1, x2);
 
   MyPlot1(customPlot, data);
 
