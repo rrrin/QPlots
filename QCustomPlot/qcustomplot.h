@@ -68,6 +68,7 @@
 #include <qmath.h>
 #include <limits>
 #include <algorithm>
+
 #ifdef QCP_OPENGL_FBO
 #  include <QtGui/QOpenGLContext>
 #  include <QtGui/QOpenGLFramebufferObject>

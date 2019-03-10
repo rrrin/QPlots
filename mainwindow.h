@@ -25,7 +25,7 @@ public:
   ~MainWindow();
   
   void MyDemo1(QCustomPlot *customPlot);
-  void MyPlot1(QCustomPlot *customPlot, const MyData & data, const int n);
+  void MyPlot1(QCustomPlot *customPlot, const MyData & data, const int n, double x, double y);
   bool saveToPNG(QCustomPlot *customPlot);
 private slots:
   
