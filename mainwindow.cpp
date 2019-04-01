@@ -136,7 +136,8 @@ MainWindow::MainWindow(QWidget *parent) :
 	ui(new Ui::MainWindow)
 {
 	ui->setupUi(this);
-	setGeometry(100, 250, 542, 390);
+	setGeometry(100, 50, 742, 590);
+	
 
 	MyDemo1(ui->customPlot);
 	setWindowTitle("Plot: " + demoName);
@@ -181,7 +182,6 @@ double func_diff(double x)
 	return -50.*x / pow(1. + 25.*x*x, 2);
 }
 
-
 vector<double> progonka(const mat_t &coeff, int n, double a0, double b0, double an, double bn)
 {
 	vector<double> y(n + 1), p(n + 1), x(n + 1);
@@ -202,19 +202,19 @@ vector<double> progonka(const mat_t &coeff, int n, double a0, double b0, double 
 	return x;
 }
 
-double splain(double x, vector<double> m, vector<double> h, vector<double> xi)
+double splain(double x, vector<double> m, vector<double> h, vector<double> xi, vector<double> y )
 {
 	int i = 1;
 	while (x<xi[i - 1] || x>xi[i])
 		i++;
 	double a = m[i - 1] * pow(xi[i] - x, 3) / 6. / h[i];
 	double b = m[i] * pow(x - xi[i - 1], 3) / 6. / h[i];
-	double c = (xi[i] - x) / h[i] * (func_u(xi[i - 1]) - m[i - 1] * h[i] * h[i] / 6.);
-	double d = (x - xi[i - 1]) / h[i] * (func_u(xi[i]) - m[i] * h[i] * h[i] / 6.);
+	double c = (xi[i] - x) / h[i] * (y[i - 1] - m[i - 1] * h[i] * h[i] / 6.);
+	double d = (x - xi[i - 1]) / h[i] * (y[i] - m[i] * h[i] * h[i] / 6.);
 	return a+b+c+d;
 }
 
-vector<double> splain_coeff( int n, vector<double> x, vector<double> h, double f_diff_0, double f_diff_n)
+vector<double> splain_coeff( int n, vector<double> x, vector<double> h, double f_diff_0, double f_diff_n, vector<double> y)
 {
 
 	mat_t coeff = create_mat(4, n + 1);
@@ -223,10 +223,10 @@ vector<double> splain_coeff( int n, vector<double> x, vector<double> h, double f
 		coeff[i][0] = h[i] / 6.;
 		coeff[i][1] = 2*(h[i]+h[i+1]) / 6.;
 		coeff[i][2] = h[i+1] / 6.;
-		coeff[i][3] = (h[i]*func_u(x[i + 1]) - (h[i]+h[i+1]) * func_u(x[i]) + h[i+1]*func_u(x[i - 1])) / (h[i+1]*h[i]);
+		coeff[i][3] = (h[i]*y[i + 1] - (h[i]+h[i+1]) * y[i] + h[i+1]*y[i-1]) / (h[i+1]*h[i]);
 	}
-	double b0 = 3. * (func_u(x[1]) - func_u(x[0])) / (h[1]*h[1]) - 3.*f_diff_0 / h[1];
-	double bn = 3.*f_diff_n / h[n] - 3.*(func_u(x[n]) - func_u(x[n - 1])) / (h[n] *h[n]);
+	double b0 = 3. * (y[1] - y[0]) / (h[1]*h[1]) - 3.*f_diff_0 / h[1];
+	double bn = 3.*f_diff_n / h[n] - 3.*(y[n] - y[n-1]) / (h[n] *h[n]);
 	return progonka(coeff, n, -0.5, b0, -0.5, bn);
 
 	//cout << splain(2, M, h, x) << endl;
@@ -242,14 +242,14 @@ struct MyData
 	MyData() = default;
 };
 
-MyData MyFunc(int N, double x1, double x2, vector<double> M, vector<double> h, vector<double> x)
+MyData MyFunc(int N, double x1, double x2, vector<double> M, vector<double> h, vector<double> x, vector<double> y)
 {
 	assert(N > 1);
 	MyData ans(N);
 	for (int i = 0; i < N; ++i)
 	{
 		ans.x[i] = (x2 - x1) * i / (N - 1) + x1;
-		ans.y[i] = splain(ans.x[i], M, h, x);
+		ans.y[i] = splain(ans.x[i], M, h, x, y);
 		ans.z[i] = func_u(ans.x[i]);
 	}
 	return ans;
@@ -263,29 +263,29 @@ void MainWindow::MyPlot1(QCustomPlot *customPlot, const MyData & d, const int n,
 	{
 		x1[i] = d.x[i];
 		y1[i] = d.y[i];
-		x2[i] = d.x[i];
-		y2[i] = d.z[i];
+		//x2[i] = d.x[i];
+		//y2[i] = d.z[i];
 
 	}
-	auto x2_range = std::minmax_element(x2.begin(), x2.end());
-	auto y2_range = std::minmax_element(y2.begin(), y2.end());
+	//auto x2_range = std::minmax_element(x2.begin(), x2.end());
+	//auto y2_range = std::minmax_element(y2.begin(), y2.end());
 	auto x1_range = std::minmax_element(x1.begin(), x1.end());
 	auto y1_range = std::minmax_element(y1.begin(), y1.end());
-	auto x_min = std::min(*x1_range.first, *x2_range.first);
+	/*auto x_min = std::min(*x1_range.first, *x2_range.first);
 	auto y_min = std::min(*y1_range.first, *y2_range.first);
 	auto x_max = std::max(*x1_range.second, *x2_range.second);
 	auto y_max = std::max(*y1_range.second, *y2_range.second);
+	customPlot->addGraph(); */
 	customPlot->addGraph(); 
-	customPlot->addGraph(); 
-	assert(customPlot->graphCount() == 2);
+	//assert(customPlot->graphCount() == 2);
 	customPlot->graph(0)->setData(x1, y1);
-	customPlot->graph(1)->setData(x2, y2);
+	//customPlot->graph(1)->setData(x2, y2);
 
 	customPlot->xAxis->setLabel("x");
 	customPlot->yAxis->setLabel("y");
 	
-	customPlot->xAxis->setRange(x_min-0.1, x_max+0.1);
-	customPlot->yAxis->setRange(y_min - 0.1, y_max + 0.1);
+	customPlot->xAxis->setRange(*x1_range.first-0.1, *x1_range.second+0.1);
+	customPlot->yAxis->setRange(*y1_range.first - 0.1, *y1_range.second + 0.1);
 
 	QCPItemText *textLabel = new QCPItemText(customPlot);
 	textLabel->setPositionAlignment(Qt::AlignTop | Qt::AlignHCenter);
@@ -309,41 +309,47 @@ void MainWindow::MyPlot1(QCustomPlot *customPlot, const MyData & d, const int n,
 	//customPlot->graph(1)->setName("a*x*x+b");
 
 	customPlot->graph(0)->setPen(QPen(QColor(255, 100, 0)));
-	customPlot->graph(1)->setPen(QPen(QColor(200, 0, 100)));
+	//customPlot->graph(1)->setPen(QPen(QColor(200, 0, 100)));
 	auto pen = customPlot->graph(0)->pen();
 	pen.setWidth(3);
 	customPlot->graph(0)->setPen(pen);
-	auto pen2 = customPlot->graph(1)->pen();
-	pen2.setWidth(3);
-	customPlot->graph(1)->setPen(pen2);
-	/*customPlot->graph(2)->setPen(QColor(50, 50, 50, 255));
-	customPlot->graph(2)->setLineStyle(QCPGraph::lsNone);
-	customPlot->graph(2)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 4));
-*/
+	//auto pen2 = customPlot->graph(1)->pen();
+	//pen2.setWidth(3);
+	//customPlot->graph(1)->setPen(pen2);
+	///*customPlot->graph(2)->setPen(QColor(50, 50, 50, 255));
+	//customPlot->graph(2)->setLineStyle(QCPGraph::lsNone);
+	//customPlot->graph(2)->setScatterStyle(QCPScatterStyle(QCPScatterStyle::ssCircle, 4));
+
 }
 void MainWindow::MyDemo1(QCustomPlot *customPlot)
 {
 	demoName = "MyDemo1";
 	ifstream file_in;
-	vector<double> x;
+	vector<double> x, y;
 	double r;
 	file_in.open("text.txt");
-	while (file_in >> r)
+	file_in >> r;
+	int n = r;
+	while ((file_in >> r)&&(x.size()!=n))
+	{
 		x.push_back(r);
+		file_in >> r;
+		y.push_back(r);
+	}
+	double f_diff1 = r;
+	file_in >> r; 
+	double f_diff2 = r;
 	int N = 201;
-	int n = x.size();
+	//int n = x.size();
 	vector<double> h(n);
 	for (int i = 1; i < n; i++)
 		h[i]=x[i] - x[i-1];
-	vector<double> M = splain_coeff(n-1, x, h, func_diff(x[0]), func_diff(x[n-1]));
-	auto d = MyFunc(N, x[0], x[n - 1], M, h, x);
-	double a = 0.12;
-	double b = splain(a, M, h, x);
+	vector<double> M = splain_coeff(n-1, x, h, f_diff1, f_diff2, y);
+	auto d = MyFunc(N, x[0], x[n - 1], M, h, x, y);
+	double a = -0.5;
+	double b = splain(a, M, h, x, y);
 	MyPlot1(customPlot, d, 2, a, b);
 }
-
-
-
 bool MainWindow::saveToPNG(QCustomPlot *customPlot)
 {
 	QString fileName = demoName + ".png";
